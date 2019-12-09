@@ -1,9 +1,9 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace EditorWindowEUI
+namespace EditorWindowEUI.UI
 {
-    public class Image : BaseUI,IPointerDragHandler
+    public class Image : BaseUI
     {
         private Texture2D _mainTexture;
 
@@ -13,20 +13,16 @@ namespace EditorWindowEUI
             set => _mainTexture = value;
         }
 
-        protected override GUIStyle GetStyle()
-        {
-            return null;
-        }
+        
 
-
-        protected override void OnUIDraw()
+        protected override void OnDrawElement()
         {
-            EditorGUI.DrawTextureTransparent(RenderInfo, MainTexture);
+            EditorGUI.DrawTextureTransparent(RenderRectInfo, MainTexture);
         }
 
         public void OnDrag(Vector2 delta, Vector2 mousePos)
         {
-            AnchordPosition += delta;
+            AnchoredPosition += delta;
         }
     } 
 }

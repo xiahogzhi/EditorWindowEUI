@@ -4,7 +4,26 @@ namespace EditorWindowEUI
 {
     public class UIElement
     {
+        private bool _isVisibility = true;
+
         public EUICore CurEuiCore { private set; get; }
+
+        /// <summary>
+        /// 创建时调用
+        /// </summary>
+        public virtual void OnLayerBuild()
+        {
+        }
+
+
+        /// <summary>
+        /// 是否可见
+        /// </summary>
+        public virtual bool IsVisibility
+        {
+            set => _isVisibility = value;
+            get => _isVisibility;
+        }
 
         private string _name;
 
@@ -35,6 +54,14 @@ namespace EditorWindowEUI
         public int ChildCount => _child.Count;
 
 
+        protected virtual void OnAddChild(UIElement ui)
+        {
+        }
+
+        protected virtual void OnRemoveChild(UIElement ui)
+        {
+        }
+
         /// <summary>
         /// 获取子元素
         /// </summary>
@@ -48,6 +75,71 @@ namespace EditorWindowEUI
         public override string ToString()
         {
             return Name;
+        }
+
+        /// <summary>
+        /// 销毁当前UI
+        /// </summary>
+        public void Destroy()
+        {
+            OnDestroy();
+            if (Parent != null)
+            {
+                Parent._child.Remove(this);
+                Parent.OnRemoveChild(this);
+            }
+            else
+            {
+                CurEuiCore.RemoveElement(this);
+            }
+
+            CurEuiCore.RefreshAllElement();
+        }
+
+        /// <summary>
+        /// 销毁时调用
+        /// </summary>
+        protected virtual void OnDestroy()
+        {
+        }
+
+        /// <summary>
+        /// 获取当前索引
+        /// </summary>
+        /// <returns></returns>
+        public int GetIndex()
+        {
+            if (Parent == null)
+            {
+                return CurEuiCore.GetIndex(this);
+            }
+
+            return Parent._child.IndexOf(this);
+        }
+
+        /// <summary>
+        /// 设置索引
+        /// </summary>
+        /// <param name="index"></param>
+        public void SetIndex(int index)
+        {
+            if (index < 0)
+                index = 0;
+
+            if (Parent == null)
+            {
+                CurEuiCore.SetIndex(index, this);
+                return;
+            }
+
+            Parent._child.Remove(this);
+            
+            if (index >= Parent.ChildCount)
+                index = Parent.ChildCount - 1;
+
+            Parent._child.Insert(index, this);
+
+            CurEuiCore.RefreshAllElement();
         }
 
         /// <summary>
@@ -73,6 +165,7 @@ namespace EditorWindowEUI
             {
                 if (Parent != null)
                 {
+                    Parent.OnRemoveChild(this);
                     Parent._child.Remove(this);
                 }
                 else
@@ -89,6 +182,7 @@ namespace EditorWindowEUI
                 {
                     Parent = parent;
                     parent._child.Add(this);
+                    Parent.OnAddChild(this);
                     CurEuiCore.RefreshAllElement();
                 }
             }
@@ -100,10 +194,13 @@ namespace EditorWindowEUI
         /// </summary>
         public void Draw()
         {
-            OnDraw();
-            foreach (var VARIABLE in _child)
+            if (IsVisibility)
             {
-                VARIABLE.Draw();
+                OnDraw();
+                foreach (var VARIABLE in _child)
+                {
+                    VARIABLE.Draw();
+                }
             }
         }
 

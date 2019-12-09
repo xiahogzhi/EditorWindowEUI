@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.UI;
 using UnityEngine;
 
-namespace EditorWindowEUI
+namespace EditorWindowEUI.UI
 {
     public class InputField : BaseUI, IKeyDownHandler, ICharacterInputHandler, IPointerDragHandler
     {
@@ -58,15 +58,15 @@ namespace EditorWindowEUI
             }
         }
 
-        protected override GUIStyle GetStyle()
+        protected  GUIStyle GetStyle()
         {
 //            return AssetDatabase.LoadAssetAtPath<GUISkin>("Assets/Skin.guiskin").textField;
             return EditorStyles.textField;
         }
 
-        protected override void OnUIDraw()
+        protected override void OnDrawElement()
         {
-            Rect rectInfo = RenderInfo;
+            Rect rectInfo = RenderRectInfo;
             _currentPosition = GetStyle().GetCursorPixelPosition(rectInfo, _content, _cursorIndex);
 
 
@@ -80,7 +80,10 @@ namespace EditorWindowEUI
             }
 
 
-            EditorGUIUtility.AddCursorRect(rectInfo, MouseCursor.Text);
+            if (IsHover)
+            {
+                EditorGUIUtility.AddCursorRect(rectInfo, MouseCursor.Text);
+            }
 
             Vector2 content = GetStyle().contentOffset;
             GetStyle().contentOffset = new Vector2(_offset.x, 0);
@@ -286,12 +289,22 @@ namespace EditorWindowEUI
 
         public void OnDrag(Vector2 delta, Vector2 mousePos)
         {
+            mousePos.y = RectInfo.yMin +3;
             _cursorIndex = GetStyle().GetCursorStringIndex(RectInfo, _content, mousePos - _offset);
 //            if (mousePos < )
 //            {
 //                
 //            }
             _isSelect = true;
+        }
+
+        public void OnStartDrag(Vector2 mousePos)
+        {
+            
+        }
+
+        public void OnDragEnd(Vector2 mousePos)
+        {
         }
     }
 }

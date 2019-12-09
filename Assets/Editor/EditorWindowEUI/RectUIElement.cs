@@ -11,8 +11,7 @@ namespace EditorWindowEUI
         /// 当前物体实在的位置,用于检测点击,绘制基础形状
         /// </summary>
         public virtual Rect RectInfo { protected set; get; }
-        
-        
+
 
         private bool _focus;
 
@@ -40,14 +39,17 @@ namespace EditorWindowEUI
         {
         }
 
+        
         protected override void OnDraw()
         {
-//            EditorGUI.DrawRect(RectInfo, new Color(0,0.8f,0.5f,0.5f));
+          //  EditorGUI.DrawRect(RectInfo, new Color(0.3f,0.8f,0.6f,0.1f));
         }
 
         public virtual bool OverlapPoint(Vector2 point, Event curEvt)
         {
-            return RectInfo.Contains(point);
+            return IsVisibility && RectInfo.Contains(point);
         }
-    }
+
+
+    } 
 }

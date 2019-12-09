@@ -4,16 +4,25 @@ using UnityEngine.EventSystems;
 
 namespace EditorWindowEUI
 {
-    public class LayoutUIElement : RectUIElement
+    public class LayoutUIElement : RectUIElement //, IPointerDragHandler
     {
-        private Vector2 _anchordPosition;
-        private Vector2 _anchorMax;
-        private Vector2 _anchorMin;
+        private Vector2 _anchoredPosition;
+        private Vector2 _anchorMax = new Vector2(0.5f, 0.5f);
+        private Vector2 _anchorMin = new Vector2(0.5f, 0.5f);
         private Vector2 _offsetMax;
         private Vector2 _offsetMin;
-        private Vector2 _pivot;
-        private Vector2 _size;
+        private Vector2 _pivot = new Vector2(0.5f, 0.5f);
+        private Vector2 _size = new Vector2(100, 100);
         private Vector2 _position;
+
+        private bool EnabledChangeAnchoredPosition = true;
+        private bool EnabledChangeAnchorMax = true;
+        private bool EnabledChangeAnchorMin = true;
+        private bool EnabledChangeOffsetMax = true;
+        private bool EnabledChangeOffsetMin = true;
+        private bool EnabledChangePivot = true;
+        private bool EnabledChangeSize = true;
+
 
         /// <summary>
         /// 裁剪父物体,如果存在则表示使用父物体的RectInfo作为裁剪区域
@@ -31,10 +40,15 @@ namespace EditorWindowEUI
             return base.OverlapPoint(point, curEvt);
         }
 
+//        public void OnDrag(Vector2 delta, Vector2 mousePos)
+//        {
+//            AnchordPosition += delta;
+//        }
+
         /// <summary>
         /// 渲染用此,点击事件作用RectInfo,此Rect计算了裁剪坐标
         /// </summary>
-        public Rect RenderInfo
+        public Rect RenderRectInfo
         {
             get
             {
@@ -50,6 +64,11 @@ namespace EditorWindowEUI
         //用于判断当前ui是否开启裁剪子物体
         private bool _isActiveClipInChild;
 
+        public override void OnLayerBuild()
+        {
+            base.OnLayerBuild();
+            CalcPosition();
+        }
 
         /// <summary>
         /// 是否开启裁剪
@@ -91,34 +110,81 @@ namespace EditorWindowEUI
             }
         }
 
-
-        public LayoutUIElement()
+        void UpdateClipInChild()
         {
-            AnchordPosition = Vector2.zero;
-            Pivot = new Vector2(0.5f, 0.5f);
-            SetAnchor(AnchorType.MiddleCenter);
-            Size = new Vector2(100, 100);
+            LayoutUIElement par = Parent as LayoutUIElement;
+            if (par == null)
+                return;
+
+            //判断父节点是是否开启子节点裁剪
+
+            Stack<LayoutUIElement> stack = new Stack<LayoutUIElement>();
+            for (int i = 0; i < ChildCount; i++)
+            {
+                stack.Push(GetChild(i) as LayoutUIElement);
+            }
+
+            while (stack.Count > 0)
+            {
+                LayoutUIElement ui = stack.Pop();
+                if (par._isActiveClipInChild)
+                    ui.ClipParent = par;
+                else if (par.ClipParent != null)
+                    ui.ClipParent = par.ClipParent;
+                else
+                    ui.ClipParent = null;
+
+                //如果当前子物体开启裁剪则取消
+                ui._isActiveClipInChild = false;
+
+                for (int i = 0; i < ui.ChildCount; i++)
+                {
+                    stack.Push(ui.GetChild(i) as LayoutUIElement);
+                }
+            }
         }
 
-        public Vector2 AnchordPosition
+
+        public virtual Vector2 AnchoredPosition
         {
-            get { return _anchordPosition; }
-            set { _anchordPosition = value; }
+            get { return _anchoredPosition; }
+            set
+            {
+                if (EnabledChangeAnchoredPosition && _anchoredPosition != value)
+                {
+                    _anchoredPosition = value;
+                    CalcPosition();
+                }
+            }
         }
 
-        public Vector2 Size
+        public virtual Vector2 Size
         {
             get { return _size; }
-            set { _size = value; }
+            set
+            {
+                if (EnabledChangeSize && _size != value)
+                {
+                    _size = value;
+                    CalcPosition();
+                }
+            }
         }
 
         public Vector2 Position
         {
             get { return _position; }
-            private set { _position = value; }
+            private set
+            {
+                if (_position != value)
+                {
+                    _position = value;
+                    CalcPosition();
+                }
+            }
         }
 
-        public Vector2 AnchorMax
+        public virtual Vector2 AnchorMax
         {
             get { return _anchorMax; }
             set
@@ -134,11 +200,15 @@ namespace EditorWindowEUI
 
                 if (value.y > 1)
                     value.y = 1;
-                _anchorMax = value;
+                if (EnabledChangeAnchorMax && _anchorMax != value)
+                {
+                    _anchorMax = value;
+                    CalcPosition();
+                }
             }
         }
 
-        public Vector2 AnchorMin
+        public virtual Vector2 AnchorMin
         {
             get { return _anchorMin; }
             set
@@ -154,32 +224,50 @@ namespace EditorWindowEUI
 
                 if (value.y > 1)
                     value.y = 1;
-                _anchorMin = value;
+                if (EnabledChangeAnchorMin && _anchorMin != value)
+                {
+                    _anchorMin = value;
+                    CalcPosition();
+                }
             }
         }
 
         /// <summary>
         /// 自适应锚点类型时需要的最大参数
         /// </summary>
-        public Vector2 OffsetMax
+        public virtual Vector2 OffsetMax
         {
             get { return _offsetMax; }
-            set { _offsetMax = value; }
+            set
+            {
+                if (EnabledChangeOffsetMax && _offsetMax != value)
+                {
+                    _offsetMax = value;
+                    CalcPosition();
+                }
+            }
         }
 
         /// <summary>
         /// 自适应锚点类型时需要的最小参数
         /// </summary>
-        public Vector2 OffsetMin
+        public virtual Vector2 OffsetMin
         {
             get { return _offsetMin; }
-            set { _offsetMin = value; }
+            set
+            {
+                if (EnabledChangeOffsetMin && _offsetMin != value)
+                {
+                    _offsetMin = value;
+                    CalcPosition();
+                }
+            }
         }
 
         /// <summary>
         /// 轴点
         /// </summary>
-        public Vector2 Pivot
+        public virtual Vector2 Pivot
         {
             get { return _pivot; }
             set
@@ -196,7 +284,11 @@ namespace EditorWindowEUI
                 if (value.y > 1)
                     value.y = 1;
 
-                _pivot = value;
+                if (EnabledChangePivot && _pivot != value)
+                {
+                    _pivot = value;
+                    CalcPosition();
+                }
             }
         }
 
@@ -204,7 +296,7 @@ namespace EditorWindowEUI
         /// 设置锚点
         /// </summary>
         /// <param name="anchorType"></param>
-        public void SetAnchor(AnchorType anchorType)
+        public virtual void SetAnchor(AnchorType anchorType)
         {
             switch (anchorType)
             {
@@ -265,7 +357,17 @@ namespace EditorWindowEUI
                     _anchorMax = new Vector2(1, 1);
                     _anchorMin = new Vector2(1, 0);
                     break;
+                case AnchorType.HorizontalStretch:
+                    _anchorMax = new Vector2(1, 0.5f);
+                    _anchorMin = new Vector2(0, 0.5f);
+                    break;
+                case AnchorType.VerticalStretch:
+                    _anchorMax = new Vector2(0.5f, 1);
+                    _anchorMin = new Vector2(0.5f, 0);
+                    break;
             }
+
+            CalcPosition();
         }
 
 
@@ -288,6 +390,9 @@ namespace EditorWindowEUI
                 return;
             }
 
+            if (parent == Parent)
+                return;
+
             LayoutUIElement ui = parent as LayoutUIElement;
             if (ui.ClipParent != null)
             {
@@ -300,6 +405,10 @@ namespace EditorWindowEUI
 
 
             base.SetParent(parent);
+
+            CalcPosition();
+
+            UpdateClipInChild();
         }
 
         protected override void OnDraw()
@@ -308,8 +417,11 @@ namespace EditorWindowEUI
             CalcPosition();
         }
 
-        public void CalcPosition()
+        private void CalcPosition()
         {
+            if (CurEuiCore == null)
+                return;
+
             Rect parentRect = Rect.zero;
             Rect _result = RectInfo;
             LayoutUIElement parent = Parent as LayoutUIElement;
@@ -326,7 +438,7 @@ namespace EditorWindowEUI
             if (AnchorMax.x - AnchorMin.x == 0) //不拉伸
             {
                 _position.x = parentRect.x + AnchorMax.x * parentRect.width - Size.x * Pivot.x +
-                              _anchordPosition.x;
+                              _anchoredPosition.x;
                 _result.width = Size.x;
             }
             else
@@ -338,7 +450,7 @@ namespace EditorWindowEUI
             if (AnchorMax.y - AnchorMin.y == 0)
             {
                 _position.y = parentRect.y + (1 - AnchorMax.y) * parentRect.height - Size.y * Pivot.y +
-                              _anchordPosition.y;
+                              _anchoredPosition.y;
                 _result.height = Size.y;
             }
             else

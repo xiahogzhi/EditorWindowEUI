@@ -16,5 +16,9 @@
         RightStretch,
         TopStretch,
         BottomStretch,
+        HorizontalStretch,
+        VerticalStretch,
+        
+        
     }
 }

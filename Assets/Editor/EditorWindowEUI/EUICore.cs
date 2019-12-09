@@ -102,7 +102,36 @@ namespace EditorWindowEUI
             T t = new T();
             _curCoreProperty.SetValue(t, this);
             AddElement(t);
+            t.OnLayerBuild();
             return t;
+        }
+
+        /// <summary>
+        /// 设置根节点索引
+        /// </summary>
+        /// <param name="index"></param>
+        public void SetIndex(int index, UIElement ui)
+        {
+            if (_rootElements.Contains(ui))
+            {
+                _rootElements.Remove(ui);
+
+                if (index >= _rootElements.Count)
+                    index = _rootElements.Count - 1;
+
+                _rootElements.Insert(index, ui);
+                RefreshAllElement();
+            }
+        }
+
+        /// <summary>
+        /// 获取根节点索引
+        /// </summary>
+        /// <param name="ui"></param>
+        /// <returns></returns>
+        public int GetIndex(UIElement ui)
+        {
+            return _rootElements.IndexOf(ui);
         }
 
         /// <summary>
@@ -134,7 +163,10 @@ namespace EditorWindowEUI
             _hasChangedElement = true;
         }
 
-        private void RefreshAllElement_()
+        /// <summary>
+        /// 刷新所有UI内部实现,层级排序
+        /// </summary>
+        private void RefreshAllElementInline()
         {
             _uiElements.Clear();
 
@@ -158,12 +190,17 @@ namespace EditorWindowEUI
         /// <summary>
         /// 渲染当前添加的所有元素,在OnGUI进行调用,默认自动进行调用
         /// </summary>
-        public void Draw()
+        public void OnGUI()
         {
-//            EditorGUI.TextArea(new Rect(10, 10, 100, 20), "测试");
-//            GUI.Button(new Rect(10, 50, 100, 20), "测试");
             Event evt = Event.current;
 
+            if (evt.type == EventType.KeyDown && evt.control && evt.keyCode == KeyCode.R)
+            {
+                AssetDatabase.Refresh();
+                evt.Use();
+            }
+
+            //先进行渲染
             if (evt.type == EventType.Repaint)
             {
                 foreach (var VARIABLE in _uiElements)
@@ -184,7 +221,7 @@ namespace EditorWindowEUI
                     {
                         drag.OnDrag(mousePos - _lastDragMousePosition, mousePos);
                         _lastDragMousePosition = mousePos;
-                        CurEditorWindow.Repaint();
+                        _refreshWindow = true;
                     }
                 }
 
@@ -329,6 +366,8 @@ namespace EditorWindowEUI
                         if (drag != null && _pointerDragIndex == -1 && evt.button == 0)
                         {
                             _pointerDragIndex = i;
+                            drag.OnStartDrag(mousePos);
+
                             _lastDragMousePosition = mousePos;
 
                             if (down == null)
@@ -380,7 +419,15 @@ namespace EditorWindowEUI
 
                 if (evt.button == 0)
                 {
-                    _pointerDragIndex = -1;
+                    if (_pointerDragIndex != -1)
+                    {
+                        if (_uiElements[_pointerDragIndex] is IPointerDragHandler drag)
+                        {
+                            drag.OnDragEnd(mousePos);
+                        }
+
+                        _pointerDragIndex = -1;
+                    }
                 }
 
                 //PointerUp
@@ -470,18 +517,19 @@ namespace EditorWindowEUI
             //RefreshAllElement
             if (_hasChangedElement)
             {
-                RefreshAllElement_();
+                RefreshAllElementInline();
                 _hasChangedElement = false;
                 _refreshWindow = true;
             }
 
-
+            //鼠标移动重绘
             if (_lastMoveMousePosition != evt.mousePosition)
             {
                 _refreshWindow = true;
                 _lastDragMousePosition = evt.mousePosition;
             }
 
+            //自动重绘界面
             if (_refreshWindow)
             {
                 _refreshWindow = false;

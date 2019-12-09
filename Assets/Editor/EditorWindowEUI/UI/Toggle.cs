@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace EditorWindowEUI
+namespace EditorWindowEUI.UI
 {
     public class Toggle : BaseUI
     {
@@ -23,11 +23,7 @@ namespace EditorWindowEUI
 
         public event Action<bool> OnValueChangedEvt;
 
-        protected override GUIStyle GetStyle()
-        {
-            return GUI.skin.toggle;
-        }
-
+    
 
         public override void OnClick(Vector2 pos)
         {
@@ -35,9 +31,9 @@ namespace EditorWindowEUI
             IsOn = !IsOn;
         }
 
-        protected override void OnUIDraw()
+        protected override void OnDrawElement()
         {
-            GetStyle().Draw(RenderInfo, Text, IsHover, IsActive, IsOn, Focus);
+            GUI.skin.toggle.Draw(RenderRectInfo, Text, IsHover, IsPress, IsOn, Focus);
         }
     }
 }

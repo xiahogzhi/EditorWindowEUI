@@ -42,9 +42,14 @@ namespace EditorWindowEUI
         {
         }
 
+       
 
         private void OnGUI()
         {
+//            wantsMouseMove = true;
+//            wantsMouseEnterLeaveWindow = true;
+            
+            
             if (_euiCore == null)
             {
                 LayoutBuild();
@@ -86,7 +91,7 @@ namespace EditorWindowEUI
 
             if (_euiCore != null)
             {
-                _euiCore.Draw();
+                _euiCore.OnGUI();
 //                Repaint();
             }
         }
